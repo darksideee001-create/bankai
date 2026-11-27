@@ -1,0 +1,50 @@
+name: build updater
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install SDK components
+        run: |
+          yes | sdkmanager --licenses > /dev/null
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Prepare encrypted payload
+        run: |
+          python -m pip install --quiet cryptography
+          python tools/embed_payload.py
+
+      - name: Generate release keystore
+        run: |
+          keytool -genkeypair -keystore release.jks -storepass changeit -keypass changeit -alias updater -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Updater, OU=Mobile, O=Updater, L=NA, ST=NA, C=US"
+
+      - name: Build release APK
+        run: gradle assembleRelease --no-daemon
+
+      - name: Sign APK
+        run: |
+          BT=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)
+          "$ANDROID_HOME/build-tools/$BT/apksigner" sign --ks release.jks --ks-pass pass:changeit --key-pass pass:changeit --out updater-release.apk app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: updater-release
+          path: updater-release.apk
