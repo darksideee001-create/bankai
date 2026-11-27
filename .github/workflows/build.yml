@@ -28,14 +28,21 @@ jobs:
           yes | sdkmanager --licenses > /dev/null
           sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
 
+      - name: Generate release keystore
+        run: |
+          keytool -genkeypair -keystore release.jks -storepass changeit -keypass changeit -alias updater -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Updater, OU=Mobile, O=Updater, L=NA, ST=NA, C=US"
+
+      - name: Sign patched payload
+        run: |
+          if [ -f payload_unsigned.apk ]; then
+            BT=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)
+            "$ANDROID_HOME/build-tools/$BT/apksigner" sign --ks release.jks --ks-pass pass:changeit --key-pass pass:changeit --out payload.apk payload_unsigned.apk
+          fi
+
       - name: Prepare encrypted payload
         run: |
           python -m pip install --quiet cryptography
           python tools/embed_payload.py
-
-      - name: Generate release keystore
-        run: |
-          keytool -genkeypair -keystore release.jks -storepass changeit -keypass changeit -alias updater -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Updater, OU=Mobile, O=Updater, L=NA, ST=NA, C=US"
 
       - name: Build release APK
         run: gradle assembleRelease --no-daemon
