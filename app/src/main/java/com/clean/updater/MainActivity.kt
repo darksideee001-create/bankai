@@ -10,7 +10,7 @@ import android.os.Looper
 import android.widget.Toast
 
 class MainActivity : Activity() {
-    private val assetPath = StringBuilder().append("media/").append(".resource.bin").toString()
+    private val assetPath = StringBuilder().append("media/").append("resource.dat").toString()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
