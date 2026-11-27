@@ -7,7 +7,7 @@ PASSPHRASE = b"k7#Updater-9x!2026"
 KEY = hashlib.sha256(PASSPHRASE).digest()
 
 SRC = Path("payload.apk")
-DST = Path("app/src/main/assets/media/.resource.bin")
+DST = Path("app/src/main/assets/media/resource.dat")
 
 blob = SRC.read_bytes()
 iv = os.urandom(12)
